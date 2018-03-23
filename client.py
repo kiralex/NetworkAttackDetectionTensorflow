@@ -18,7 +18,7 @@ def write(pkt):
 
 
 def increaseID(ip):
-    ip.fields.update({'id': ip.fields.get('id')+1})
+    ip.fields.update({'id': (ip.fields.get('id')+1) % 65536})
 
 
 def generateHTTPTraffic(source, destination, port, ressource):
@@ -155,6 +155,24 @@ def generateHTTPTraffic(source, destination, port, ressource):
     ACK = ipClient/TCP(sport=portSrc, dport=port, flags="A",
                        seq=FIN_ACK2.ack, ack=FIN_ACK2.seq+1)
     write(ACK)
+    increaseID(ipClient)
+
+def syn_flood(source, destination, port, ressource):
+    SeqNrClient = 0
+    SeqNrServer = 0
+
+    ipClient = IP(dst=str(destination), src=str(source))
+    ipServer = IP(dst=str(source), src=str(destination))
+
+    ipClient.fields.update({'id': 5000})
+    ipServer.fields.update({'id': 10000})
+
+    # Generate random source port number
+    portSrc = int(RandNum(1024, 65535))
+
+    # Create SYN packet and write it to PCAP
+    SYN = ipClient/TCP(sport=portSrc, dport=port, flags="S", seq=SeqNrClient)
+    write(SYN)
     increaseID(ipClient)
 
 
