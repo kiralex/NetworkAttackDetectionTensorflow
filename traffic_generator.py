@@ -36,7 +36,19 @@ def generate_normal_traffic(nbClients, nbTotalRequest, delayPackets=0.05,
         else:
             pu.Timestamp += random.random() * delayRequests
 
+def generate_simple_syn_flood(nbTotalRequest, delayPackets=0.05, start_timestamp=None):
+    if start_timestamp is not None:
+        pu.Timestamp = start_timestamp
+
+    source = fake.ipv4()
+    
+    for _ in range(nbTotalRequest):
+        pu.syn_attack(source, DESTINATION_IP, 80, delayPackets)
+
+    
+
 
 if __name__ == '__main__':
     generate_normal_traffic(10, 200)
+    generate_simple_syn_flood(100, 0.05)
     pu.write_pcap()

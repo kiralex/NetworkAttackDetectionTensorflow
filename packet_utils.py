@@ -48,7 +48,7 @@ def increaseID(ip):
     ip.fields.update({'id': (ip.fields.get('id')+1) % 65536})
 
 
-def http_request(source, destination, port, ressource, delay=0.005):
+def http_request(source, destination, port, ressource, delay=0.05):
     global SeqNrServer, LastIdServer
 
     # initialize seq for the client
@@ -189,15 +189,12 @@ def http_request(source, destination, port, ressource, delay=0.005):
     LastIdServer = ipServer.fields.get('id')
 
 
-def syn_attack(source, destination, port, ressource, delay=.005):
+def syn_attack(source, destination, port, delay=.05):    
     # initialize seq for the client
     SeqNrClient = int(RandNum(0, 2**32))
 
     ipClient = IP(dst=str(destination), src=str(source))
-    ipServer = IP(dst=str(source), src=str(destination))
-
     ipClient.fields.update({'id': int(RandNum(0, 65535))})
-    ipServer.fields.update({'id': LastIdServer})
 
     # Generate random source port number
     portSrc = int(RandNum(1024, 65535))
@@ -205,12 +202,7 @@ def syn_attack(source, destination, port, ressource, delay=.005):
     # Create SYN packet and write it to PCAP
     SYN = ipClient/TCP(sport=portSrc, dport=port, flags="S", seq=SeqNrClient)
     save_packet(SYN, delay)
-    increaseID(ipClient)
-
-    SeqNrClient = FIN_ACK2.seq
-    SeqNrServer = ACK.seq
-
-    LastIdServer = ipServer.fields.get('id')
+    SeqNrClient = SYN.seq
 
 
 ip1 = "192.168.0.1"
