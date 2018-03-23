@@ -44,3 +44,5 @@ celerybeat-schedule
 /site
 # mypy
 .mypy_cache/
+
+.vscode
