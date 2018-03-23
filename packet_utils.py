@@ -3,6 +3,7 @@ import logging
 import time
 import inspect
 import lorem as loremipsum
+import random
 from math import ceil
 from datetime import datetime
 
@@ -13,28 +14,41 @@ from scapy.all import *
 PCAP_FILE_NAME = 'dump.pcap'
 
 INITIAL_SEQ_SERVER = 1000
-SeqNrServer = INITIAL_SEQ_SERVER
 INITIAL_ID_SERVER = 2000
+SeqNrServer = INITIAL_SEQ_SERVER
 LastIdServer = INITIAL_ID_SERVER
 
 Timestamp = time.time()
+Packet_List = []
 
 
-def write(pkt, delay=5):
+def get_timestamp():
+    global Timestamp
+    return Timestamp
+
+
+def save_packet(pkt, delay):
     global Timestamp
 
-    Timestamp += 5
+    Timestamp += random.random()*delay
+    pkt.time = Timestamp
+
+    # appends packet to packet list
+    Packet_List.append(pkt)
+
+
+def write_pcap():
+    ordered_list = sorted(Packet_List, key=lambda ts: ts.time)
 
     # appends packet to output file
-    pkt.time = Timestamp
-    wrpcap(PCAP_FILE_NAME, pkt, append=True)
+    wrpcap(PCAP_FILE_NAME, ordered_list, append=False)
 
 
 def increaseID(ip):
     ip.fields.update({'id': (ip.fields.get('id')+1) % 65536})
 
 
-def generateHTTPTraffic(source, destination, port, ressource, delay=5):
+def http_request(source, destination, port, ressource, delay=0.005):
     global SeqNrServer, LastIdServer
 
     # initialize seq for the client
@@ -51,19 +65,19 @@ def generateHTTPTraffic(source, destination, port, ressource, delay=5):
 
     # Create SYN packet and write it to PCAP
     SYN = ipClient/TCP(sport=portSrc, dport=port, flags="S", seq=SeqNrClient)
-    write(SYN, delay)
+    save_packet(SYN, delay)
     increaseID(ipClient)
 
     # SYNACK response from the server
     SYNACK = ipServer/TCP(sport=port, dport=portSrc,
                           flags="SA", seq=SeqNrServer, ack=SYN.seq+1)
-    write(SYNACK, delay)
+    save_packet(SYNACK, delay)
     increaseID(ipServer)
 
     # ACK from the client
     ACK = ipClient/TCP(sport=portSrc, dport=port, flags="A",
                        seq=SYNACK.ack, ack=SYNACK.seq + 1)
-    write(ACK, delay)
+    save_packet(ACK, delay)
     increaseID(ipClient)
 
     # Prepare GET statement
@@ -73,13 +87,13 @@ def generateHTTPTraffic(source, destination, port, ressource, delay=5):
     # psh = send data to the application
     PSH_GET = ipClient/TCP(sport=portSrc, dport=port,
                            flags="A", seq=SYNACK.ack, ack=SYNACK.seq + 1)/get
-    write(PSH_GET, delay)
+    save_packet(PSH_GET, delay)
     increaseID(ipClient)
 
     # ACK from the server, GET request is received,
     ACK = ipServer/TCP(sport=port, dport=portSrc, flags="A",
                        seq=PSH_GET.ack, ack=PSH_GET.seq + len(get))
-    write(ACK, delay)
+    save_packet(ACK, delay)
     increaseID(ipServer)
 
     # Generate custom http file content.
@@ -101,19 +115,19 @@ def generateHTTPTraffic(source, destination, port, ressource, delay=5):
         # GET response (ack, psh) from the server
         PSH_ACK = ACK_no_html / html1
 
-        write(PSH_ACK, delay)
+        save_packet(PSH_ACK, delay)
         increaseID(ipServer)
 
         # ACK from the client, GET response received by the client
         ACK = ipClient/TCP(sport=portSrc, dport=port, flags="A",
                            seq=PSH_ACK.ack, ack=PSH_ACK.seq + len(html1))
-        write(ACK, delay)
+        save_packet(ACK, delay)
         increaseID(ipClient)
 
         # FIN, ACK from the client, the client ask to end connection
         FIN_ACK = ipClient/TCP(sport=portSrc, dport=port, flags="FA",
                                seq=PSH_ACK.ack, ack=PSH_ACK.seq + len(html1))
-        write(FIN_ACK, delay)
+        save_packet(FIN_ACK, delay)
         increaseID(ipClient)
 
     else:
@@ -139,7 +153,7 @@ def generateHTTPTraffic(source, destination, port, ressource, delay=5):
             substring = html1[i*max_data_length:(i+1)*max_data_length]
 
             ACK = ACK_no_html / substring
-            write(ACK, delay)
+            save_packet(ACK, delay)
             increaseID(ipServer)
 
             # ACK from the client, GET response received by the client
@@ -147,26 +161,26 @@ def generateHTTPTraffic(source, destination, port, ressource, delay=5):
                                seq=ACK_no_html.ack, ack=ACK_no_html.seq +
                                len(substring))
             last_packet_client = ACK
-            write(ACK, delay)
+            save_packet(ACK, delay)
             increaseID(ipClient)
 
         # FIN, ACK from the client, the client ask to end connection
         FIN_ACK = ipClient/TCP(sport=portSrc, dport=port, flags="FA",
                                seq=ACK_no_html.ack, ack=ACK_no_html.seq
                                + len(html1[(nb_chunk-1)*max_data_length:nb_chunk*max_data_length]))
-        write(FIN_ACK, delay)
+        save_packet(FIN_ACK, delay)
         increaseID(ipClient)
 
     # FIN, ACK from the server, the server has received order to close connection
     FIN_ACK2 = ipServer/TCP(sport=port, dport=portSrc,
                             flags="FA", seq=FIN_ACK.ack, ack=FIN_ACK.seq+1)
-    write(FIN_ACK2, delay)
+    save_packet(FIN_ACK2, delay)
     increaseID(ipServer)
 
     # ACK from the client, the client has received the FIN, ACK from the server
     ACK = ipClient/TCP(sport=portSrc, dport=port, flags="A",
                        seq=FIN_ACK2.ack, ack=FIN_ACK2.seq+1)
-    write(ACK, delay)
+    save_packet(ACK, delay)
     increaseID(ipClient)
 
     SeqNrClient = FIN_ACK2.seq
@@ -175,7 +189,7 @@ def generateHTTPTraffic(source, destination, port, ressource, delay=5):
     LastIdServer = ipServer.fields.get('id')
 
 
-def syn_flood(source, destination, port, ressource, delay=5):
+def syn_attack(source, destination, port, ressource, delay=.005):
     # initialize seq for the client
     SeqNrClient = int(RandNum(0, 2**32))
 
@@ -190,7 +204,7 @@ def syn_flood(source, destination, port, ressource, delay=5):
 
     # Create SYN packet and write it to PCAP
     SYN = ipClient/TCP(sport=portSrc, dport=port, flags="S", seq=SeqNrClient)
-    write(SYN, delay)
+    save_packet(SYN, delay)
     increaseID(ipClient)
 
     SeqNrClient = FIN_ACK2.seq
@@ -203,5 +217,5 @@ ip1 = "192.168.0.1"
 ip2 = "192.168.0.254"
 
 if __name__ == '__main__':
-    generateHTTPTraffic(source=ip1, destination=ip2,
-                        port=80, ressource="toto.php")
+    http_request(source=ip1, destination=ip2,
+                 port=80, ressource="toto.php")
