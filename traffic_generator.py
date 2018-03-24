@@ -13,7 +13,7 @@ NB_RESSOURCES = 10
 DESTINATION_IP = "8.8.8.8"
 
 
-def generate_normal_traffic(nbClients, nbTotalRequest, delayPackets=0.05,
+def generate_normal_traffic(nbClients, nbTotalRequest, port, delayPackets=0.05,
                             delayRequests=2, start_timestamp=None):
     if start_timestamp is not None:
         pu.Timestamp = start_timestamp
@@ -28,7 +28,7 @@ def generate_normal_traffic(nbClients, nbTotalRequest, delayPackets=0.05,
         client = random.choice(clients)
         ressource = random.choice(ressources)
 
-        pu.http_request(client, DESTINATION_IP, 80, ressource, delayPackets)
+        pu.http_request(client, DESTINATION_IP, port, ressource, delayPackets)
 
         overlapping = True if random.randint(0, 1) > 0 else False
         if overlapping:
@@ -36,19 +36,18 @@ def generate_normal_traffic(nbClients, nbTotalRequest, delayPackets=0.05,
         else:
             pu.Timestamp += random.random() * delayRequests
 
-def generate_simple_syn_flood(nbTotalRequest, delayPackets=0.05, start_timestamp=None):
+
+def generate_simple_syn_flood(nbTotalRequest, port, delayPackets=0.05, start_timestamp=None):
     if start_timestamp is not None:
         pu.Timestamp = start_timestamp
 
     source = fake.ipv4()
-    
-    for _ in range(nbTotalRequest):
-        pu.syn_attack(source, DESTINATION_IP, 80, delayPackets)
 
-    
+    for _ in range(nbTotalRequest):
+        pu.syn_attack(source, DESTINATION_IP, port, delayPackets)
 
 
 if __name__ == '__main__':
-    generate_normal_traffic(10, 200)
-    generate_simple_syn_flood(100, 0.05)
+    generate_normal_traffic(10, 200, 80)
+    generate_simple_syn_flood(100, 0.05, 80)
     pu.write_pcap()

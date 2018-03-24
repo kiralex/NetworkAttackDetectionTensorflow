@@ -189,7 +189,7 @@ def http_request(source, destination, port, ressource, delay=0.05):
     LastIdServer = ipServer.fields.get('id')
 
 
-def syn_attack(source, destination, port, delay=.05):    
+def syn_attack(source, destination, port, delay=.05):
     # initialize seq for the client
     SeqNrClient = int(RandNum(0, 2**32))
 
