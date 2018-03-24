@@ -2,14 +2,17 @@
 import logging
 import time
 import inspect
-import lorem as loremipsum
 import random
 from math import ceil
 from datetime import datetime
+import faker
 
 # Change log level to suppress annoying IPv6 error
 logging.getLogger("scapy.runtime").setLevel(logging.ERROR)
 from scapy.all import *
+
+fake = faker.Faker()
+fake.add_provider(faker.providers.lorem)
 
 PCAP_FILE_NAME = 'dump.pcap'
 
@@ -20,11 +23,6 @@ LastIdServer = INITIAL_ID_SERVER
 
 Timestamp = time.time()
 Packet_List = []
-
-
-def get_timestamp():
-    global Timestamp
-    return Timestamp
 
 
 def save_packet(pkt, delay):
@@ -38,6 +36,9 @@ def save_packet(pkt, delay):
 
 
 def write_pcap():
+    if len(Packet_List) <= 0:
+        return None
+
     ordered_list = sorted(Packet_List, key=lambda ts: ts.time)
 
     # appends packet to output file
@@ -100,7 +101,8 @@ def http_request(source, destination, port, ressource, delay=0.05):
     ACK_no_html = ipServer/TCP(sport=port, dport=portSrc, flags="PA", seq=PSH_GET.ack,
                                ack=PSH_GET.seq + len(get))
 
-    lorem = loremipsum.text() + loremipsum.text()
+    lorem = "\n".join(fake.paragraphs(
+        nb=random.randint(1, 30), ext_word_list=None))
 
     response = "<html><body><h1>Here is the page " + \
         ressource + " !</h1><p>" + lorem + "</p></body></html>"
@@ -111,7 +113,7 @@ def http_request(source, destination, port, ressource, delay=0.05):
     packet_size = len(ACK_no_html)
     max_data_length = mtu - packet_size
 
-    if len(html1) <= packet_size:
+    if len(html1) <= max_data_length:
         # GET response (ack, psh) from the server
         PSH_ACK = ACK_no_html / html1
 
@@ -189,7 +191,7 @@ def http_request(source, destination, port, ressource, delay=0.05):
     LastIdServer = ipServer.fields.get('id')
 
 
-def syn_attack(source, destination, port, delay=.05):
+def syn_packet(source, destination, port, delay=.05):
     # initialize seq for the client
     SeqNrClient = int(RandNum(0, 2**32))
 
@@ -205,9 +207,8 @@ def syn_attack(source, destination, port, delay=.05):
     SeqNrClient = SYN.seq
 
 
-ip1 = "192.168.0.1"
-ip2 = "192.168.0.254"
-
 if __name__ == '__main__':
+    ip1 = "192.168.0.1"
+    ip2 = "192.168.0.254"
     http_request(source=ip1, destination=ip2,
                  port=80, ressource="toto.php")
