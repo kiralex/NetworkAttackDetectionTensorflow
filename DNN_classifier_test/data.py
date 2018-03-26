@@ -13,7 +13,8 @@ COL2_NAME = 'col2'
 CLASS_NAME = 'class'
 
 CSV_COLUMN_NAMES = [COL1_NAME, COL2_NAME, CLASS_NAME]
-LABELS = ["0", "1"]
+LABELS = ["attack", "safe-packet"]
+
 
 def parse_label_column(label_string_tensor):
 
@@ -22,6 +23,7 @@ def parse_label_column(label_string_tensor):
 
     # Use the hash table to convert string labels to ints and one-hot encode
     return table.lookup(label_string_tensor)
+
 
 def load_data(label_name='class'):
     """Parses the csv file in TRAIN_URL and TEST_URL."""
@@ -35,30 +37,27 @@ def load_data(label_name='class'):
 
     # Parse the local CSV file.
     train = pd.read_csv(filepath_or_buffer=train_path,
-        sep=";",
-        names=CSV_COLUMN_NAMES,  # list of column names
-        header=None,  # as the first line does not contain column names
-        dtype={'class': np.object}
-    )
-
+                        sep=",",
+                        header=0,  # as the first line does not contain column names
+                        )
 
     # 1. Assign the DataFrame's labels (the right-most column) to train_label.
     # 2. Delete (pop) the labels from the DataFrame.
     # 3. Assign the remainder of the DataFrame to train_features
     train_features, train_label = train, train[label_name]
 
-
     # Apply the preceding logic to the test set.
     # test_path = tf.keras.utils.get_file(TEST_URL.split('/')[-1], TEST_URL)
     test_path = TRAIN_URL
-    test = pd.read_csv(test_path, sep=";", names=CSV_COLUMN_NAMES, header=None)
-    
+    test = pd.read_csv(test_path, sep=",", header=0)
+
     test_label = test[label_name]
-    #remove the class
+    # remove the class
     test_features = test.drop('class', axis='columns')
 
     # Return four DataFrames.
     return (train_features, train_label), (test_features, test_label)
+
 
 def train_input_fn(features, labels, batch_size):
     """An input function for training"""
@@ -67,6 +66,7 @@ def train_input_fn(features, labels, batch_size):
     dataset = tf.data.Dataset.from_tensor_slices((dict(features), labels))
 
     # Shuffle, repeat, and batch the examples.
+    # dataset = dataset.shuffle(1000).repeat().batch(batch_size)
     dataset = dataset.shuffle(1000).repeat().batch(batch_size)
 
     # Return the dataset.
@@ -75,7 +75,7 @@ def train_input_fn(features, labels, batch_size):
 
 def eval_input_fn(features, labels, batch_size):
     """An input function for evaluation or prediction"""
-    features=dict(features)
+    features = dict(features)
     if labels is None:
         # No labels, use only features.
         inputs = features

@@ -1,5 +1,6 @@
 #! /bin/python3
 
+import csv
 from scapy.all import *
 
 
@@ -27,13 +28,41 @@ def associate_packet_class(traffic_filename, snort_output_filename):
             found.attack = True
             nb_trouve += 1
 
-
     return packets
+
+
+def save_csv(packets, filename="out.csv"):
+    file = open(filename, "w")
+    try:
+        writer = csv.writer(file)
+
+        writer.writerow(("timestamp", "source_ip", "destination_ip", "source_port",
+                         "destination_port", "flags", "identification", "data", "class"))
+
+        for p in packets:
+            writer.writerow(
+                (
+                    p.time,
+                    p.src,
+                    p.dst,
+                    p[TCP].sport,
+                    p[TCP].dport,
+                    # str(p[TCP].flags),
+                    p.sprintf('%TCP.flags%'),
+                    p.id,
+                    p["Raw"].load.decode('ascii') if p.haslayer("Raw") else "",
+                    "attack" if p.attack else "safe-packet"
+                )
+            )
+
+    finally:
+        file.close()
 
 
 def main():
     # use editcap -d tcpdump-blocked.pcap.1522057494 out_snort.pcap !!!!!!!!!!
     packets = associate_packet_class("traffic.pcap", "out_snort.pcap")
+    save_csv(packets, "out.csv")
 
 
 if __name__ == '__main__':
