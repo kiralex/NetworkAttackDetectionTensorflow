@@ -2,6 +2,7 @@
 import random
 import sys
 import argparse
+import profile
 from faker import Faker
 
 import packet_utils as pu
@@ -14,8 +15,8 @@ NB_RESSOURCES = 10
 DESTINATION_IP = "8.8.8.8"
 
 
-def generate_normal_traffic(nbClients, nbTotalRequest, port, delayPackets=0.05,
-                            delayRequests=2, start_timestamp=None):
+def generate_normal_traffic(nbClients, nbTotalRequest, port, delayPackets=0.005,
+                            delayRequests=3, start_timestamp=None):
     if start_timestamp is not None:
         pu.Timestamp = start_timestamp
 
@@ -45,7 +46,7 @@ def generate_normal_traffic(nbClients, nbTotalRequest, port, delayPackets=0.05,
             pu.Timestamp += random.random() * delayRequests
 
 
-def generate_simple_syn_flood(nbTotalRequest, port, delayPackets=0.05, start_timestamp=None):
+def generate_simple_syn_flood(nbTotalRequest, port, delayPackets=0.005, start_timestamp=None):
     if start_timestamp is not None:
         pu.Timestamp = start_timestamp
 
@@ -58,28 +59,98 @@ def generate_simple_syn_flood(nbTotalRequest, port, delayPackets=0.05, start_tim
 
 
 def generate_distributed_syn_flood(nbClients, nbTotalRequest, port,
-                                   delayPackets=0.05,
+                                   delayPackets=0.005,
                                    start_timestamp=None):
     if start_timestamp is not None:
         pu.Timestamp = start_timestamp
 
-    # generate client source IPs
-    clients = [fake.ipv4() for _ in range(nbClients)]
-
     # generate requests
     for _ in range(nbTotalRequest):
         # pick a random client and ressource
-        client = random.choice(clients)
+        client = fake.ipv4()
 
         # make request
         pu.syn_packet(client, DESTINATION_IP, port, delayPackets)
 
 
-if __name__ == '__main__':
+def generate_traffic(filename, nbRequests, pSimpleSYN, pDistributedSYN, port, min_request, max_request=150):
+    pu.PCAP_FILE_NAME = filename
+
+    nbSimpleSYN = int(pSimpleSYN*nbRequests)
+    nbDistributedSYN = int(pDistributedSYN*nbRequests)
+    nbNormal = nbRequests - nbDistributedSYN - nbSimpleSYN
+
+    MAX_CLIENTS = 30
+
+    count = 0
+    choices = []
+    if nbNormal > 0:
+        choices.append("normal")
+    if nbSimpleSYN > 0:
+        choices.append("simpleSYN")
+    if nbDistributedSYN > 0:
+        choices.append("distributedSYN")
+
+    while count < nbRequests:
+        choice = random.choice(choices)
+        print(count)
+
+        if choice == "normal":
+            # if no other choice
+            if len(choices) == 1:
+                # general all remaining packets
+                generate_normal_traffic(MAX_CLIENTS, nbNormal, port)
+                count += nbNormal
+                choices.remove("normal")
+            else:
+                maxi = random.randint(0, nbNormal)
+                print(maxi)
+                generate_normal_traffic(MAX_CLIENTS, maxi, port)
+                nbNormal -= maxi
+                count += maxi
+                if nbNormal <= 0:
+                    choices.remove("normal")
+
+        if choice == "simpleSYN":
+            # if no other choice
+            if len(choices) == 1:
+                # general all remaining packets
+                generate_simple_syn_flood(nbSimpleSYN, port)
+                count += nbSimpleSYN
+                choices.remove("simpleSYN")
+            else:
+                maxi = random.randint(min_request, max_request)
+                print(maxi)
+                generate_simple_syn_flood(maxi, port)
+                nbSimpleSYN -= maxi
+                count += maxi
+                if nbSimpleSYN <= 0:
+                    choices.remove("simpleSYN")
+
+        if choice == "distributedSYN":
+            # if no other choice
+            if len(choices) == 1:
+                # general all remaining packets
+                generate_distributed_syn_flood(
+                    MAX_CLIENTS, nbDistributedSYN, port)
+                count += nbDistributedSYN
+                choices.remove("distributedSYN")
+            else:
+                maxi = random.randint(1, nbDistributedSYN)
+                print(maxi)
+                generate_distributed_syn_flood(
+                    MAX_CLIENTS, maxi, port)
+                nbDistributedSYN -= maxi
+                count += maxi
+                if nbDistributedSYN <= 0:
+                    choices.remove("distributedSYN")
+
+
+def main():
     parser = argparse.ArgumentParser(
-        description="Generate fake traffic and store it to PCAP file. "
-        + "The generated traffic can contain normal requests, single client "
-        + "SYN flood or distributed SYN flood")
+        description=("Generate fake traffic and store it to PCAP file. "
+                     + "The generated traffic can contain normal requests, single client "
+                     + "SYN flood or distributed SYN flood"))
     parser.add_argument("filename", type=str,
                         help="output pcap containing generated traffic")
 
@@ -88,7 +159,7 @@ if __name__ == '__main__':
     parser.add_argument('--simpleSYN', "-s", default=1/3.0, type=float,
                         help='ratio of single client SYN flood attack',
                         metavar="[0-1]")
-    parser.add_argument('--distributedSyn', '-ds', default=1/3.0, type=float,
+    parser.add_argument('--distributedSYN', '-ds', default=1/3.0, type=float,
                         help='ratio of distributed SYN flood attack',
                         metavar="[0-1]")
 
@@ -102,28 +173,29 @@ if __name__ == '__main__':
         sys.stderr.write("Error : SIMPLESYN must be in [0, 1]\n")
         sys.exit(1)
 
-    if args.distributedSyn < 0 or args.distributedSyn > 1:
+    if args.distributedSYN < 0 or args.distributedSYN > 1:
         sys.stderr.write("Error : DISTRIBUTEDSYN must be in [0, 1]\n")
         sys.exit(1)
 
-    if args.simpleSYN + args.distributedSyn > 1:
+    if args.simpleSYN + args.distributedSYN > 1:
         sys.stderr.write(
             "Error : SIMPLESYN + DISTRIBUTEDSYN must be smaller than 1\n")
         sys.exit(1)
 
     print("Summary of generation parametters:")
     print("\tNumber of requests: " + str(args.nbRequests))
-    print("\tNormal traffic: " + str("%.2f" % ((1 -
-                                     args.simpleSYN - args.distributedSyn)*100))
-          + "%")
-    print("\tSimple syn flood attacks: " + str("%.2f" % (args.simpleSYN*100)) + "%")
+    print("\tNormal traffic: " +
+          str("%.2f" % ((1 -
+                         args.simpleSYN - args.distributedSYN)*100)) + "%")
+    print("\tSimple syn flood attacks: " +
+          str("%.2f" % (args.simpleSYN*100)) + "%")
     print("\tDistributed syn flood attacks: " +
-          str("%.2f" % (args.distributedSyn*100)) + "%")
+          str("%.2f" % (args.distributedSYN*100)) + "%")
 
-    # start normal traffic
-    generate_normal_traffic(15, 300, 80)
-    # generate_simple_syn_flood(150, 80)
-    # generate_normal_traffic(10, 1050, 80)
-    # generate_distributed_syn_flood(5, 750, 80)
-    # generate_normal_traffic(10, 1050, 80)
+    generate_traffic(args.filename, args.nbRequests,
+                     args.simpleSYN, args.distributedSYN, 80, 100, 150)
     pu.write_pcap()
+
+
+if __name__ == '__main__':
+    main()

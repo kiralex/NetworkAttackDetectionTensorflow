@@ -28,11 +28,13 @@ Packet_List = []
 def save_packet(pkt, delay):
     global Timestamp
 
-    Timestamp += random.random()*delay
+    Timestamp += delay
     pkt.time = Timestamp
 
     # appends packet to packet list
-    Packet_List.append(pkt)
+    # Packet_List.append(pkt)
+
+    wrpcap(PCAP_FILE_NAME, pkt, append=True)
 
 
 def write_pcap():
@@ -43,13 +45,14 @@ def write_pcap():
 
     # appends packet to output file
     wrpcap(PCAP_FILE_NAME, ordered_list, append=False)
+    
 
 
 def increaseID(ip):
     ip.fields.update({'id': (ip.fields.get('id')+1) % 65536})
 
 
-def http_request(source, destination, port, ressource, delay=0.05):
+def http_request(source, destination, port, ressource, delay=0.005):
     global SeqNrServer, LastIdServer
 
     # initialize seq for the client
@@ -191,7 +194,7 @@ def http_request(source, destination, port, ressource, delay=0.05):
     LastIdServer = ipServer.fields.get('id')
 
 
-def syn_packet(source, destination, port, delay=.05):
+def syn_packet(source, destination, port, delay=.005):
     # initialize seq for the client
     SeqNrClient = int(RandNum(0, 2**32))
 
@@ -204,11 +207,14 @@ def syn_packet(source, destination, port, delay=.05):
     # Create SYN packet and write it to PCAP
     SYN = ipClient/TCP(sport=portSrc, dport=port, flags="S", seq=SeqNrClient)
     save_packet(SYN, delay)
-    SeqNrClient = SYN.seq
 
 
 if __name__ == '__main__':
+
+
     ip1 = "192.168.0.1"
     ip2 = "192.168.0.254"
-    http_request(source=ip1, destination=ip2,
-                 port=80, ressource="toto.php")
+
+    for i in range(1000):
+        http_request(source=ip1, destination=ip2,
+                    port=80, ressource="toto.php")
