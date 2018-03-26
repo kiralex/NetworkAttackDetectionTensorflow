@@ -28,24 +28,21 @@ Packet_List = []
 def save_packet(pkt, delay):
     global Timestamp
 
+    print("delay: " + str(delay) + ";")
+
     Timestamp += delay
     pkt.time = Timestamp
-
-    # appends packet to packet list
-    # Packet_List.append(pkt)
 
     wrpcap(PCAP_FILE_NAME, pkt, append=True)
 
 
-def write_pcap():
-    if len(Packet_List) <= 0:
-        return None
+def reorder_pcap():
+    packets = rdpcap(PCAP_FILE_NAME)
 
-    ordered_list = sorted(Packet_List, key=lambda ts: ts.time)
+    ordered_list = sorted(packets, key=lambda ts: ts.time)
 
     # appends packet to output file
-    wrpcap(PCAP_FILE_NAME, ordered_list, append=False)
-    
+    wrpcap(PCAP_FILE_NAME+"ordered", ordered_list, append=False)
 
 
 def increaseID(ip):
@@ -211,10 +208,9 @@ def syn_packet(source, destination, port, delay=.005):
 
 if __name__ == '__main__':
 
-
     ip1 = "192.168.0.1"
     ip2 = "192.168.0.254"
 
     for i in range(1000):
         http_request(source=ip1, destination=ip2,
-                    port=80, ressource="toto.php")
+                     port=80, ressource="toto.php")

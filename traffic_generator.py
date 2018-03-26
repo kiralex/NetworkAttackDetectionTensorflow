@@ -194,7 +194,7 @@ def main():
 
     generate_traffic(args.filename, args.nbRequests,
                      args.simpleSYN, args.distributedSYN, 80, 100, 150)
-    pu.write_pcap()
+    pu.reorder_pcap()
 
 
 if __name__ == '__main__':
