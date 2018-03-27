@@ -28,8 +28,6 @@ Packet_List = []
 def save_packet(pkt, delay):
     global Timestamp
 
-    print("delay: " + str(delay) + ";")
-
     Timestamp += delay
     pkt.time = Timestamp
 
@@ -42,7 +40,7 @@ def reorder_pcap():
     ordered_list = sorted(packets, key=lambda ts: ts.time)
 
     # appends packet to output file
-    wrpcap(PCAP_FILE_NAME+"ordered", ordered_list, append=False)
+    wrpcap(PCAP_FILE_NAME, ordered_list, append=False)
 
 
 def increaseID(ip):

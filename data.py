@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from termcolor import colored, cprint
 
-TRAIN_URL = "./out.csv"
+TRAIN_URL = "./out_100000.csv"
 TEST_URL = "./out.csv"
 
 TIMESTAMP_NAME = "timestamp"
@@ -21,6 +21,8 @@ CLASS_NAME = "class"
 CSV_COLUMN_NAMES = [TIMESTAMP_NAME, SOURCE_IP_NAME, DESTINATION_IP_NAME,
                     SOURCE_PORT_NAME, DESTINATION_PORT_NAME, FLAGS_NAME,
                     IDENTIFICATION_NAME, DATA_NAME, CLASS_NAME]
+
+LABELS = ["attack", "safe-packet"]
 
 
 def parse_label_column(label_string_tensor):
@@ -43,12 +45,15 @@ def load_data(label_name='class'):
     train_path = TRAIN_URL
 
     # Parse the local CSV file.
-    train = pd.read_csv(filepath_or_buffer=train_path,
-                        sep=";",
-                        names=CSV_COLUMN_NAMES,  # list of column names
-                        header=None,  # as the first line does not contain column names
-                        dtype={'class': np.object}
-                        )
+    data = pd.read_csv(filepath_or_buffer=train_path,
+                       sep=",",
+                       names=CSV_COLUMN_NAMES,  # list of column names
+                       header=0,  # as the first line does not contain column names
+                       )
+
+    data.fillna("", inplace=True)
+
+    train = data[0:(len(data)/2)]
 
     # 1. Assign the DataFrame's labels (the right-most column) to train_label.
     # 2. Delete (pop) the labels from the DataFrame.
@@ -57,8 +62,14 @@ def load_data(label_name='class'):
 
     # Apply the preceding logic to the test set.
     # test_path = tf.keras.utils.get_file(TEST_URL.split('/')[-1], TEST_URL)
-    test_path = TRAIN_URL
-    test = pd.read_csv(test_path, sep=";", names=CSV_COLUMN_NAMES, header=None)
+    test_path = TEST_URL
+    test = pd.read_csv(filepath_or_buffer=test_path,
+                       sep=",",
+                       names=CSV_COLUMN_NAMES,  # list of column names
+                       header=0,  # as the first line does not contain column names
+                       )
+    # test = data  # data[len(data)/2+1:]
+    test.fillna("", inplace=True)
 
     test_label = test[label_name]
     # remove the class
@@ -70,6 +81,11 @@ def load_data(label_name='class'):
 
 def train_input_fn(features, labels, batch_size):
     """An input function for training"""
+
+    cprint(features["data"], "green")
+
+    cprint(features, 'red')
+    cprint(labels, 'blue')
 
     # Convert the inputs to a Dataset.
     dataset = tf.data.Dataset.from_tensor_slices((dict(features), labels))

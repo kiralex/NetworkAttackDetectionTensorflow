@@ -97,13 +97,13 @@ def generate_traffic(filename, nbRequests, pSimpleSYN, pDistributedSYN, port, mi
 
         if choice == "normal":
             # if no other choice
-            if len(choices) == 1:
+            if len(choices) == 1 or nbNormal <= 10:
                 # general all remaining packets
                 generate_normal_traffic(MAX_CLIENTS, nbNormal, port)
                 count += nbNormal
                 choices.remove("normal")
             else:
-                maxi = random.randint(0, nbNormal)
+                maxi = random.randint(0, int(nbNormal/10))
                 print(maxi)
                 generate_normal_traffic(MAX_CLIENTS, maxi, port)
                 nbNormal -= maxi

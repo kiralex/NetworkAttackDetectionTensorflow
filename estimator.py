@@ -18,37 +18,55 @@ def main(argv):
 
     (train_x, train_y), (test_x, test_y) = data.load_data()
 
-    categorial_column = tf.feature_column.categorical_column_with_vocabulary_list
+    # cprint(test_x, 'red')
+    # cprint(test_y, 'blue')
+
+    indicator_column = tf.feature_column.embedding_column
     numeric_column = tf.feature_column.numeric_column
-    indicator_column = tf.feature_column.indicator_column
+    categorical_column_with_hash_bucket = tf.feature_column.categorical_column_with_hash_bucket
+    embedding_column = tf.feature_column.embedding_column
 
     # get features columns
     my_feature_columns = [
-        tf.feature_column.numeric_column(key=data.TIMESTAMP_NAME),
-        tf.feature_column.categorical_column_with_hash_bucket(
-            key=data.SOURCE_IP_NAME,
-            hash_buckets_size=10000),
-        tf.feature_column.categorical_column_with_hash_bucket(
-            key=data.DESTINATION_IP_NAME,
-            hash_buckets_size=10000),
-        tf.feature_column.numeric_column(key=data.SOURCE_PORT_NAME),
-        tf.feature_column.numeric_column(key=data.DESTINATION_PORT_NAME),
-        tf.feature_column.categorical_column_with_hash_bucket(
-            key=data.FLAGS_NAME,
-            hash_buckets_size=100),
-        tf.feature_column.numeric_column(key=data.IDENTIFICATION_NAME),
-        tf.feature_column.categorical_column_with_hash_bucket(
-            key=data.DATA_NAME,
-            hash_buckets_size=10000),
+        numeric_column(key=data.TIMESTAMP_NAME),
+        embedding_column(
+            categorical_column_with_hash_bucket(
+                key=data.SOURCE_IP_NAME,
+                hash_bucket_size=10000),
+            50
+        ),
+        embedding_column(
+            categorical_column_with_hash_bucket(
+                key=data.DESTINATION_IP_NAME,
+                hash_bucket_size=10000),
+            50
+        ),
+        numeric_column(key=data.SOURCE_PORT_NAME),
+        numeric_column(key=data.DESTINATION_PORT_NAME),
+        embedding_column(
+            categorical_column_with_hash_bucket(
+                key=data.FLAGS_NAME,
+                hash_bucket_size=100),
+            50
+        ),
+        numeric_column(key=data.IDENTIFICATION_NAME),
+        embedding_column(
+            categorical_column_with_hash_bucket(
+                key=data.DATA_NAME,
+                hash_bucket_size=10000),
+            50
+        )
     ]
 
     classifier = tf.estimator.DNNClassifier(
         feature_columns=my_feature_columns,
         # Two hidden layers of 10 nodes each.
-        hidden_units=[5, 5, 5],
+        hidden_units=[2],
         # The model must choose between 2 classes.
         label_vocabulary=data.LABELS,
-        n_classes=2)
+        n_classes=2,
+        model_dir="model/DNN/alpha9"
+    )
 
     # Train the Model.
     classifier.train(

@@ -61,8 +61,8 @@ def save_csv(packets, filename="out.csv"):
 
 def main():
     # use editcap -d tcpdump-blocked.pcap.1522057494 out_snort.pcap !!!!!!!!!!
-    packets = associate_packet_class("traffic.pcap", "out_snort.pcap")
-    save_csv(packets, "out.csv")
+    packets = associate_packet_class("bigger_gen.pcap", "out_snort_100000.pcap")
+    save_csv(packets, "out_100000.csv")
 
 
 if __name__ == '__main__':
