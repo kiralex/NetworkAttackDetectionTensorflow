@@ -2,9 +2,10 @@
 FROM nvidia/cuda:9.0-devel-ubuntu16.04
 
 # To know the ip addr and prevent warning "delay ... apt-utils not installed"
+# + utils packet
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install --assume-yes apt-utils
-RUN apt-get install -y net-tools apt-utils
+RUN apt-get install -y net-tools apt-utils nano
 
 # Install python 3.5 and virtualenv
 RUN apt-get update
@@ -93,5 +94,5 @@ RUN sed -i 's/var BLACK\_LIST\_PATH ..\/rules/var BLACK\_LIST\_PATH \/etc\/snort
 RUN sed -i 's/# output log\_tcpdump: tcpdump.log/output log\_tcpdump: alert.pcap/' /etc/snort/snort.conf
 
 
-# Test snort config
-CMD ["snort", "-T", "-c", "/etc/snort/snort.conf"]
+# Test snort alert
+RUN echo "alert icmp any any -> \$HOME_NET any (msg:"ICMP test"; sid:10000001; )" >> /etc/snort/rules/local.rules
