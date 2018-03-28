@@ -12,7 +12,6 @@ def associate_packet_class(traffic_filename, snort_output_filename):
         p.attack = False
 
     i = 0
-    nb_trouve = 0
     for pa in attacks:
         found = None
         while found is None and i < len(packets):
@@ -26,20 +25,25 @@ def associate_packet_class(traffic_filename, snort_output_filename):
 
         if found is not None:
             found.attack = True
-            nb_trouve += 1
 
     return packets
 
 
 def save_csv(packets, filename="out.csv"):
+    # open file
     file = open(filename, "w")
+
     try:
+        # initialize CSV writer for the file
         writer = csv.writer(file)
 
+        # writing header file
         writer.writerow(("timestamp", "source_ip", "destination_ip", "source_port",
                          "destination_port", "flags", "identification", "data", "class"))
 
+        # for each packet
         for p in packets:
+            # write values of the packet
             writer.writerow(
                 (
                     p.time,
@@ -54,15 +58,19 @@ def save_csv(packets, filename="out.csv"):
                     "attack" if p.attack else "safe-packet"
                 )
             )
+    except err:
+        print("Error : %s" % e)
 
     finally:
+        # closing file
         file.close()
 
 
 def main():
     # use editcap -d tcpdump-blocked.pcap.1522057494 out_snort.pcap !!!!!!!!!!
-    packets = associate_packet_class("bigger_gen.pcap", "out_snort_100000.pcap")
-    save_csv(packets, "out_100000.csv")
+    packets = associate_packet_class(
+        "train.pcap", "train_snort.pcap")
+    save_csv(packets, "out_snort_train.csv")
 
 
 if __name__ == '__main__':
