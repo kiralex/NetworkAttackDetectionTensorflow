@@ -1,0 +1,7 @@
+Dans l'installation après :
+RUN sed -i 's/include \$RULE\_PATH/#include \$RULE\_PATH/' /etc/snort/snort.conf
+
+Dans le dockerfile, y'a pas :
+ipvar HOME_NET <server public IP>/32
+ipvar EXTERNAL_NET !$HOME_NET
+
