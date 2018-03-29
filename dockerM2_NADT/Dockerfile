@@ -99,5 +99,29 @@ RUN sed -i 's/var BLACK\_LIST\_PATH ..\/rules/var BLACK\_LIST\_PATH \/etc\/snort
 RUN sed -i 's/# output log\_tcpdump: tcpdump.log/output log\_tcpdump: alert.pcap/' /etc/snort/snort.conf
 
 
-# Test snort alert
-RUN echo "alert icmp any any -> \$HOME_NET any (msg:\"ICMP test\"; sid:10000001; )" >> /etc/snort/rules/local.rules
+# snort alert to TCP DOS and DDOS
+RUN echo "alert tcp any any -> any 80 (flags: S; msg:\"Possible TCP DoS\"; detection_filter: track by_src, count 50, seconds 1; sid:10001;)" >> /etc/snort/rules/local.rules
+RUN echo "alert tcp any any -> any 80 (flags: S; msg:\"Possible TCP DDoS\"; detection_filter: track by_dst, count 130, seconds 2; sid:10002;)" >> /etc/snort/rules/local.rules
+
+# Install faker and lorem python
+CMD ["pip3", "install", "faker", "lorem"]
+
+# To edit a pcap in command line
+RUN apt-get install -y wireshark-common
+
+RUN apt-get install -y tcpdump
+RUN pip3 install faker lorem
+
+# Finalisation install of tensorflow python package
+RUN pip3 install --upgrade \
+    https://storage.googleapis.com/tensorflow/linux/gpu/tensorflow_gpu-1.6.0-cp35-cp35m-linux_x86_64.whl
+
+# Copy of tensorrt
+WORKDIR /
+COPY nv-tensorrt-repo-ubuntu1604-ga-cuda9.0-trt3.0.4-20180208_1-1_amd64.deb /
+
+# Install of tensorrt
+RUN dpkg -i nv-tensorrt-repo-ubuntu1604-ga-cuda9.0-trt3.0.4-20180208_1-1_amd64.deb
+RUN apt-get update
+RUN apt-get install -y tensorrt python3-libnvinfer-doc
+RUN pip3 install pandas

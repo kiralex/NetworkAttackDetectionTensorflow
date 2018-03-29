@@ -5,8 +5,8 @@ import pandas as pd
 import numpy as np
 from termcolor import colored, cprint
 
-TEST_URL = "./out_snort_test.csv"
-TRAIN_URL = "./out_snort_train.csv"
+TEST_URL = "./mySuperCSV.csv"
+TRAIN_URL = "./mySuperCSV.csv"
 
 TIMESTAMP_NAME = "timestamp"
 SOURCE_IP_NAME = "source_ip"

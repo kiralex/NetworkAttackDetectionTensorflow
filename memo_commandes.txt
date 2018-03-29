@@ -1,9 +1,5 @@
-python traffic_generator.py train.pcap -n 50000 -s 0.4 -ds 0.4
-scp ./train.pcap  vagrant@192.168.56.3:/home/vagrant
-ssh vagrant@192.168.56.3
-sudo rm -f /var/log/snort/*
-sudo snort -r test.pcap  -u snort -g snort -c /etc/snort/snort.conf 
-root@192.168.56.3:"/var/log/snort/train*" .
+python3 traffic_generator.py train.pcap -n 50000 -s 0.4 -ds 0.4
+snort -r train.pcap  -u snort -g snort -c /etc/snort/snort.conf 
 editcap -d tcpdump-blocked.pcap.a_compléter out_snort_test.pcap
-python transform_to_csv.py
+python3 transform_to_csv.py --source train2.pcap --snort-out out_snort_test.pcap --csv-out mySuperCSV.csv
 python estimator.py

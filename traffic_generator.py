@@ -93,7 +93,6 @@ def generate_traffic(filename, nbRequests, pSimpleSYN, pDistributedSYN, port, mi
 
     while count < nbRequests:
         choice = random.choice(choices)
-        print(count)
 
         if choice == "normal":
             # if no other choice
@@ -104,7 +103,6 @@ def generate_traffic(filename, nbRequests, pSimpleSYN, pDistributedSYN, port, mi
                 choices.remove("normal")
             else:
                 maxi = random.randint(0, int(nbNormal/10))
-                print(maxi)
                 generate_normal_traffic(MAX_CLIENTS, maxi, port)
                 nbNormal -= maxi
                 count += maxi
@@ -120,7 +118,6 @@ def generate_traffic(filename, nbRequests, pSimpleSYN, pDistributedSYN, port, mi
                 choices.remove("simpleSYN")
             else:
                 maxi = random.randint(min_request, max_request)
-                print(maxi)
                 generate_simple_syn_flood(maxi, port)
                 nbSimpleSYN -= maxi
                 count += maxi
@@ -137,7 +134,6 @@ def generate_traffic(filename, nbRequests, pSimpleSYN, pDistributedSYN, port, mi
                 choices.remove("distributedSYN")
             else:
                 maxi = random.randint(1, nbDistributedSYN)
-                print(maxi)
                 generate_distributed_syn_flood(
                     MAX_CLIENTS, maxi, port)
                 nbDistributedSYN -= maxi

@@ -1,6 +1,7 @@
 #! /bin/python3
 
 import csv
+import argparse
 from scapy.all import *
 
 
@@ -67,10 +68,22 @@ def save_csv(packets, filename="out.csv"):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--source", type=str, required=True,
+                        help="source pcap file")
+    
+    parser.add_argument("--snort-out", type=str, required=True,
+                        help="snort output pcap file")
+
+    
+    parser.add_argument("--csv-out", type=str, required=True,
+                        help="output csv file")
+    args = parser.parse_args()
+
     # use editcap -d tcpdump-blocked.pcap.1522057494 out_snort.pcap !!!!!!!!!!
     packets = associate_packet_class(
-        "train.pcap", "train_snort.pcap")
-    save_csv(packets, "out_snort_train.csv")
+        args.source, args.snort_out)
+    save_csv(packets, args.csv_out)
 
 
 if __name__ == '__main__':

@@ -6,15 +6,20 @@ from termcolor import colored, cprint
 
 import data
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--batch_size', default=1000, type=int, help='batch size')
-parser.add_argument(
-    '--train_steps', default=10000, type=int, help='number of training steps')
-
-
 def main(argv):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--batch-size', default=1000, type=int, help='batch size')
+    parser.add_argument(
+        '--train-steps', default=10000, type=int, help='number of training steps')
+    parser.add_argument(
+        '--train-file',type=str, help='training file', required=True)
+    parser.add_argument(
+        '--test-file',type=str, help='test file', required=True)
 
     args = parser.parse_args(argv[1:])
+
+    data.TRAIN_URL = args.train_file
+    data.TEST_URL = args.test_file
 
     (train_x, train_y), (test_x, test_y) = data.load_data()
 
@@ -92,4 +97,4 @@ def main(argv):
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.WARN)
 
-    # tf.app.run()
+    tf.app.run()
