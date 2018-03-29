@@ -1,6 +1,8 @@
 # Use an official Python runtime as a parent image
 FROM nvidia/cuda:9.0-devel-ubuntu16.04
 
+
+
 # To know the ip addr and prevent warning "delay ... apt-utils not installed"
 # + utils packet
 ARG DEBIAN_FRONTEND=noninteractive
@@ -76,6 +78,9 @@ RUN cp /snort_src/snort-2.9.11.1/etc/*.map /etc/snort
 # Comment unnecessary import into snort.conf
 RUN sed -i 's/include \$RULE\_PATH/#include \$RULE\_PATH/' /etc/snort/snort.conf
 
+# Uncumment local.rules import
+RUN sed -i 's/#include \$RULE\_PATH\/local.rules/include \$RULE\_PATH\/local.rules/' /etc/snort/snort.conf
+
 # Modify snort.conf internal/external addr
 RUN sed -i 's/ipvar HOME\_NET any/ipvar HOME\_NET 172.17.0.2\/24/' /etc/snort/snort.conf
 RUN sed -i 's/ipvar EXTERNAL\_NET any/ipvar EXTERNAL\_NET !\$HOME\_NET/' /etc/snort/snort.conf
@@ -95,4 +100,4 @@ RUN sed -i 's/# output log\_tcpdump: tcpdump.log/output log\_tcpdump: alert.pcap
 
 
 # Test snort alert
-RUN echo "alert icmp any any -> \$HOME_NET any (msg:"ICMP test"; sid:10000001; )" >> /etc/snort/rules/local.rules
+RUN echo "alert icmp any any -> \$HOME_NET any (msg:\"ICMP test\"; sid:10000001; )" >> /etc/snort/rules/local.rules
