@@ -7,9 +7,9 @@ from termcolor import colored, cprint
 import data
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--batch_size', default=100, type=int, help='batch size')
+parser.add_argument('--batch_size', default=1000, type=int, help='batch size')
 parser.add_argument(
-    '--train_steps', default=1000, type=int, help='number of training steps')
+    '--train_steps', default=10000, type=int, help='number of training steps')
 
 
 def main(argv):
@@ -46,7 +46,7 @@ def main(argv):
         embedding_column(
             categorical_column_with_hash_bucket(
                 key=data.FLAGS_NAME,
-                hash_bucket_size=100),
+                hash_bucket_size=20),
             50
         ),
         numeric_column(key=data.IDENTIFICATION_NAME),
@@ -61,11 +61,11 @@ def main(argv):
     classifier = tf.estimator.DNNClassifier(
         feature_columns=my_feature_columns,
         # Two hidden layers of 10 nodes each.
-        hidden_units=[2],
+        hidden_units=[10, 10, 10],
         # The model must choose between 2 classes.
         label_vocabulary=data.LABELS,
         n_classes=2,
-        model_dir="model/DNN/alpha9"
+        model_dir="model/DNN/Giga"
     )
 
     # Train the Model.
@@ -76,11 +76,20 @@ def main(argv):
 
     # Evaluate the model.
     eval_result = classifier.evaluate(
+        input_fn=lambda: data.eval_input_fn(train_x, train_y, args.batch_size))
+
+    print('\nTest set accuracy with same data as training) : {accuracy:0.3f}\n'.format(
+        **eval_result))
+
+    # Evaluate the model.
+    eval_result = classifier.evaluate(
         input_fn=lambda: data.eval_input_fn(test_x, test_y, args.batch_size))
 
-    print('\nTest set accuracy: {accuracy:0.3f}\n'.format(**eval_result))
+    print('\nTest set accuracy (with other data): {accuracy:0.3f}\n'.format(
+        **eval_result))
 
 
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.WARN)
-    tf.app.run(main)
+
+    # tf.app.run()

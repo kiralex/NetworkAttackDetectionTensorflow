@@ -22,8 +22,6 @@ SeqNrServer = INITIAL_SEQ_SERVER
 LastIdServer = INITIAL_ID_SERVER
 
 Timestamp = time.time()
-Packet_List = []
-
 
 def save_packet(pkt, delay):
     global Timestamp
@@ -99,7 +97,7 @@ def http_request(source, destination, port, ressource, delay=0.005):
     ACK_no_html = ipServer/TCP(sport=port, dport=portSrc, flags="PA", seq=PSH_GET.ack,
                                ack=PSH_GET.seq + len(get))
 
-    lorem = "\n".join(fake.paragraphs(
+    lorem = " ".join(fake.paragraphs(
         nb=random.randint(1, 30), ext_word_list=None))
 
     response = "<html><body><h1>Here is the page " + \
